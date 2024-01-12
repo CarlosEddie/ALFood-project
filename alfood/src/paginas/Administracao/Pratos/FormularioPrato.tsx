@@ -3,8 +3,24 @@ import { useEffect, useState } from "react"
 import ITag from "../../../interfaces/ITag"
 import http from "../../../http"
 import IRestaurante from "../../../interfaces/IRestaurante"
+import { useParams } from "react-router-dom"
+import IPrato from "../../../interfaces/IPrato"
 
 const FormularioPrato = () => {
+
+    const parametros = useParams()
+
+    useEffect(() => {
+        if (parametros.id) {
+            http.get<IPrato>(`pratos/${parametros.id}/`)
+                .then(response => {
+                    setNomePrato(response.data.nome)
+                    setDescricao(response.data.descricao)
+                    setTag(response.data.tag)
+                    setRestaurante(response.data.restaurante.toString()); // Convert to string before setting
+                })
+        }
+    }, [parametros])
 
 
     const [nomePrato, setNomePrato] = useState('')
@@ -16,7 +32,7 @@ const FormularioPrato = () => {
     const [restaurantes, setRestaurantes] = useState<IRestaurante[]>([])
 
     useEffect(() => {
-        http.get<{tags: ITag[]}>('tags/')
+        http.get<{ tags: ITag[] }>('tags/')
             .then(response => setTags(response.data.tags))
         http.get<IRestaurante[]>('restaurantes/')
             .then(response => setRestaurantes(response.data))
@@ -29,7 +45,7 @@ const FormularioPrato = () => {
             setImagem(null)
         }
     }
-    
+
     const aoSubmeterForm = (evento: React.FormEvent<HTMLFormElement>) => {
         evento.preventDefault()
 
@@ -46,22 +62,39 @@ const FormularioPrato = () => {
             formData.append('imagem', imagem)
         }
 
-        http.request({
-            url: 'pratos/',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            },
-            data: formData,
-        })
-            .then(() => {
-                setNomePrato('')
-                setDescricao('')
-                setTag('')
-                setRestaurante('')
-                alert('Prato cadastrado com sucesso')
+        if (parametros.id) {
+            http.request({
+                url: `pratos/${parametros.id}/`,
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+                data: formData,
             })
-            .catch(error => console.log(error))
+                .then(() => {
+                    alert('Prato atualizado com sucesso')
+                })
+                .catch(error => console.log(error))
+        } else {
+            http.request({
+                url: 'pratos/',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+                data: formData,
+            })
+                .then(() => {
+                    setNomePrato('')
+                    setDescricao('')
+                    setTag('')
+                    setRestaurante('')
+                    alert('Prato cadastrado com sucesso')
+                })
+                .catch(error => console.log(error))
+        }
+
+
 
     }
 
@@ -89,7 +122,7 @@ const FormularioPrato = () => {
                         </MenuItem>)}
                     </Select>
                 </FormControl>
-                <input type="file" onChange={selecionarArquivo}/>
+                <input type="file" onChange={selecionarArquivo} />
                 <Button sx={{ marginTop: 1 }} fullWidth type="submit" variant="outlined">Salvar</Button>
             </Box>
         </Box>
